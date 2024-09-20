@@ -10,19 +10,16 @@ if(isset($_GET['filename'])){
 $path = file_get_contents("config.txt"); //"/Users/jamiebalfour/Dropbox/!Photos being sorted/Batch 3";
 
 if(!file_exists($path . '/!sorter/')){
-  $cmd = "mkdir '". $path . "/!sorter/'";
-  shell_exec($cmd);
+  mkdir($path . "/!sorter/");
 }
 
 if(!file_exists($path . '/!bin/')){
-  $cmd = "mkdir '". $path . "/!bin/'";
-  shell_exec($cmd);
+  mkdir($path . "/!bin/");
 }
 
 
 if(isset($_POST['folder_name'])){
-  $cmd = "mkdir '". $path . "/" . $_POST['folder_name'] . "'";
-  shell_exec($cmd);
+  mkdir($path . "/" . $_POST['folder_name']);
 }
 
 function endsWith($str, $end){
@@ -32,8 +29,8 @@ function endsWith($str, $end){
 
 if(isset($_GET['file']) && isset($_GET['folder'])){
   if(file_exists($path . '/' . $_GET['file'])){
-    $cmd = "mv '".$path . '/' . $_GET['file']."' '".$path . '/' . $_GET['folder']."'";
-    shell_exec($cmd);
+    rename($path . '/' . $_GET['file'], $path . '/' . $_GET['folder']);
+
   }
 }
 
@@ -54,8 +51,7 @@ if(file_exists("magick")){
 }
 
 if(endsWith($file, ".heic") && $magick_path != null){
-  $cmd = "rm '" . $path . "/!sorter/output.jpg'";
-  shell_exec($cmd);
+  unlink($path . "/!sorter/output.jpg";
   $cmd = $magick_path . " '".$file."' -quality 100% '" . $path . "/!sorter/output.jpg'";
   shell_exec($cmd);
 }
