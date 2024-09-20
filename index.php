@@ -1,7 +1,21 @@
 <?php
 
+
+$is_windows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+
+function fixPaths($p){
+  if($is_windows){
+    return str_replace("/", "\\", $p);
+  } else{
+    return $p;
+  }
+
+}
+
 if(isset($_GET['filename'])){
-  header("Content-Type:" . mime_content_type($_GET['filename']));
+  $filename = urldecode($_GET['filename']);
+  header("Content-Type:" . mime_content_type($filename));
+
   header("Content-Disposition: inline;");
   readfile($_GET['filename']);
   exit;
@@ -28,9 +42,8 @@ function endsWith($str, $end){
 
 
 if(isset($_GET['file']) && isset($_GET['folder'])){
-  if(file_exists($path . '/' . $_GET['file'])){
-    rename($path . '/' . $_GET['file'], $path . '/' . $_GET['folder']);
-
+  if(file_exists($path . '/' . urldecode($_GET['file']))){
+    rename($path . '/' . urldecode($_GET['file']), $path . '/' . $_GET['folder'] . '/' . $_GET['file']);
   }
 }
 
@@ -51,7 +64,7 @@ if(file_exists("magick")){
 }
 
 if(endsWith($file, ".heic") && $magick_path != null){
-  unlink($path . "/!sorter/output.jpg";
+  unlink($path . "/!sorter/output.jpg");
   $cmd = $magick_path . " '".$file."' -quality 100% '" . $path . "/!sorter/output.jpg'";
   shell_exec($cmd);
 }
@@ -222,11 +235,11 @@ if(isset($_GET['file']) && isset($_GET['folder'])){
         echo '<img id="main_image" src="?filename='. $path . '/!sorter/output.jpg">';
         echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
       } else if(endsWith($file, ".jpg")){
-        echo '<img id="main_image" src="'."?filename=".$file.'">';
+        echo '<img id="main_image" src="'."?filename=".urlencode($file).'">';
         echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
       } else if(endsWith($file, ".mp4") || endsWith($file, ".mov")){
         echo '<img id="main_image" style="display:none;">';
-        echo '<video autoplay controls id="main_video"><source src="'."?filename=".$file.'" type="video/mp4"></video>';
+        echo '<video autoplay controls id="main_video"><source src="'."?filename=".urlencode($file).'" type="video/mp4"></video>';
       }
     } else{
       echo '<p id="no_more">No more files found!</p>';
@@ -250,10 +263,6 @@ if(isset($_GET['file']) && isset($_GET['folder'])){
     <form id="folder_form" method="post">
       <input name="folder_name" id="folder_name">
     </form>
-    <script src="https://www.jamiebalfour.scot/public/scripts/photo-sorter.js">
-
-
-
-    </script>
+    <script src="https://www.jamiebalfour.scot/public/scripts/photo-sorter.js"></script>
   </body>
 </html>
