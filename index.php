@@ -62,11 +62,14 @@ if(file_exists("magick")){
   $magick_path = realpath("magick.exe");
 }
 
-if(endsWith($file, ".heic") && $magick_path != null){
-  unlink($path . "/!sorter/output.jpg");
-  $cmd = $magick_path . " '".$file."' -quality 100% '" . $path . "/!sorter/output.jpg'";
-  shell_exec($cmd);
+if(isset($file)){
+  if(endsWith($file, ".heic") && $magick_path != null){
+    unlink($path . "/!sorter/output.jpg");
+    $cmd = $magick_path . " '".$file."' -quality 100% '" . $path . "/!sorter/output.jpg'";
+    shell_exec($cmd);
+  }
 }
+
 
 
 if(isset($_GET['file']) && isset($_GET['folder'])){
