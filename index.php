@@ -75,7 +75,7 @@ if(isset($file)){
 if(isset($_GET['file']) && isset($_GET['folder'])){
   //Generate the next image
   if(isset($file)){
-    $preview = $file;
+    $preview = "?filename=".$file."&time=".time();
 
     if(endsWith($file, ".heic")){
       $preview = "?filename=" . $path . "/!sorter/output.jpg&time=" . time();
