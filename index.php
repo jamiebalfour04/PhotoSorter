@@ -88,6 +88,9 @@ if(isset($_GET['file']) && isset($_GET['folder'])){
     }
     echo json_encode(array("msg" => "Moved file " . $_GET['file'] . " to " . $_GET['folder'], "file" => basename($file), "preview" => $preview, "type" => $type, "total" => count($files)));
     exit;
+  } else{
+    echo json_encode(array("msg" => "No more files"));
+    exit;
   }
 
 }
