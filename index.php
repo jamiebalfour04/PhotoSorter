@@ -47,9 +47,8 @@ if(isset($_GET['file']) && isset($_GET['folder'])){
   }
 }
 
-
 $dirs = glob($path . "/*", GLOB_ONLYDIR);
-$files = array_diff(glob($path . "/*.{heic,jpg,mp4,mov}", GLOB_BRACE), $dirs);
+$files = array_diff(glob($path . "/*.{heic,jpg,jpeg,mp4,mov}", GLOB_BRACE), $dirs);
 
 if(count($files) > 0){
   $file = $files[0];
@@ -234,7 +233,7 @@ if(isset($_GET['file']) && isset($_GET['folder'])){
       if(endsWith($file, ".heic")){
         echo '<img id="main_image" src="?filename='. $path . '/!sorter/output.jpg">';
         echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
-      } else if(endsWith($file, ".jpg")){
+      } else if(endsWith($file, ".jpg") || endsWith($file, ".jpeg")){
         echo '<img id="main_image" src="'."?filename=".urlencode($file).'">';
         echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
       } else if(endsWith($file, ".mp4") || endsWith($file, ".mov")){
