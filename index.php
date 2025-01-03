@@ -74,19 +74,22 @@ if(isset($file)){
 
 if(isset($_GET['file']) && isset($_GET['folder'])){
   //Generate the next image
-  $preview = $file;
+  if(isset($_GET['file'])){
+    $preview = $file;
 
-  if(endsWith($file, ".heic")){
-    $preview = "?filename=" . $path . "/!sorter/output.jpg&time=" . time();
+    if(endsWith($file, ".heic")){
+      $preview = "?filename=" . $path . "/!sorter/output.jpg&time=" . time();
+    }
+
+
+    $type = "image";
+    if(endsWith($file, ".mov") || endsWith($file, ".mp4")){
+      $type = "video";
+    }
+    echo json_encode(array("msg" => "Moved file " . $_GET['file'] . " to " . $_GET['folder'], "file" => basename($file), "preview" => $preview, "type" => $type, "total" => count($files)));
+    exit;
   }
 
-
-  $type = "image";
-  if(endsWith($file, ".mov") || endsWith($file, ".mp4")){
-    $type = "video";
-  }
-  echo json_encode(array("msg" => "Moved file " . $_GET['file'] . " to " . $_GET['folder'], "file" => basename($file), "preview" => $preview, "type" => $type, "total" => count($files)));
-  exit;
 }
 
 ?>
