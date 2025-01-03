@@ -74,7 +74,7 @@ if(isset($file)){
 
 if(isset($_GET['file']) && isset($_GET['folder'])){
   //Generate the next image
-  if(isset($_GET['file'])){
+  if(isset($file)){
     $preview = $file;
 
     if(endsWith($file, ".heic")){
