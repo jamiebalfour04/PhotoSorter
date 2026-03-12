@@ -22,7 +22,7 @@ if(isset($_GET['filename'])){
 }
 
 $path = file_get_contents("config.txt"); //"/Users/jamiebalfour/Dropbox/!Photos being sorted/Batch 3";
-
+echo '<!--Path : ' . $path . '-->';
 if(!file_exists($path . '/!sorter/')){
   mkdir($path . "/!sorter/");
 }
