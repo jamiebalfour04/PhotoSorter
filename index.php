@@ -1,98 +1,128 @@
 <?php
-
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 $is_windows = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
 
-function fixPaths($p){
-  if($is_windows){
-    return str_replace("/", "\\", $p);
-  } else{
-    return $p;
-  }
-
+function endsWith($str, $end) {
+  return strtolower(substr($str, -strlen($end))) === strtolower($end);
 }
 
-if(isset($_GET['filename'])){
-  $filename = urldecode($_GET['filename']);
-  header("Content-Type:" . mime_content_type($filename));
+$path = trim(file_get_contents("config.txt"));
+$path = rtrim($path, "/\\");
 
-  header("Content-Disposition: inline;");
-  readfile($_GET['filename']);
+$sorterDir = $path . DIRECTORY_SEPARATOR . '!sorter';
+$binDir = $path . DIRECTORY_SEPARATOR . '!bin';
+
+if (!file_exists($sorterDir)) {
+  mkdir($sorterDir);
+}
+
+if (!file_exists($binDir)) {
+  mkdir($binDir);
+}
+
+if (isset($_GET['filename'])) {
+  $filename = urldecode($_GET['filename']);
+
+  if (file_exists($filename)) {
+    $mime = false;
+    if(function_exists("mime_content_type")){
+      $mime = mime_content_type($filename);
+    }
+    if ($mime === false) {
+      $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+      if ($ext === 'jpg' || $ext === 'jpeg') {
+        $mime = 'image/jpeg';
+      } else if ($ext === 'png') {
+        $mime = 'image/png';
+      } else if ($ext === 'mp4') {
+        $mime = 'video/mp4';
+      } else if ($ext === 'mov') {
+        $mime = 'video/quicktime';
+      } else {
+        $mime = 'application/octet-stream';
+      }
+    }
+
+    header("Content-Type: " . $mime);
+    header("Content-Disposition: inline;");
+    header("Content-Length: " . filesize($filename));
+    readfile($filename);
+  }
+
   exit;
 }
 
-$path = file_get_contents("config.txt"); //"/Users/jamiebalfour/Dropbox/!Photos being sorted/Batch 3";
-echo '<!--Path : ' . $path . '-->';
-if(!file_exists($path . '/!sorter/')){
-  mkdir($path . "/!sorter/");
-}
-
-if(!file_exists($path . '/!bin/')){
-  mkdir($path . "/!bin/");
-}
-
-
-if(isset($_POST['folder_name'])){
-  mkdir($path . "/" . $_POST['folder_name']);
-}
-
-function endsWith($str, $end){
-  return substr( $str, -strlen($end) ) === $end;
-}
-
-
-if(isset($_GET['file']) && isset($_GET['folder'])){
-  if(file_exists($path . '/' . urldecode($_GET['file']))){
-    rename($path . '/' . urldecode($_GET['file']), $path . '/' . $_GET['folder'] . '/' . $_GET['file']);
+if (isset($_POST['folder_name']) && trim($_POST['folder_name']) !== '') {
+  $newFolder = $path . DIRECTORY_SEPARATOR . trim($_POST['folder_name']);
+  if (!file_exists($newFolder)) {
+    mkdir($newFolder);
   }
 }
 
-$dirs = glob($path . "/*", GLOB_ONLYDIR);
-$files = array_diff(glob($path . "/*.{heic,jpg,jpeg,mp4,mov}", GLOB_BRACE), $dirs);
+if (isset($_GET['file']) && isset($_GET['folder'])) {
+  $source = $path . DIRECTORY_SEPARATOR . urldecode($_GET['file']);
+  $dest = $path . DIRECTORY_SEPARATOR . $_GET['folder'] . DIRECTORY_SEPARATOR . urldecode($_GET['file']);
 
-if(count($files) > 0){
+  if (file_exists($source)) {
+    rename($source, $dest);
+  }
+}
+
+$dirs = glob($path . DIRECTORY_SEPARATOR . "*", GLOB_ONLYDIR);
+$files = glob($path . DIRECTORY_SEPARATOR . "*.{heic,HEIC,jpg,JPG,jpeg,JPEG,mp4,MP4,mov,MOV}", GLOB_BRACE);
+
+if ($files && count($files) > 0) {
   $file = $files[0];
 }
 
 $magick_path = null;
 
-if(file_exists("magick")){
-  $magick_path = realpath("magick");
-} else if(file_exists("magick.exe")){
+if (file_exists("magick.exe")) {
   $magick_path = realpath("magick.exe");
+} else if (file_exists("magick")) {
+  $magick_path = realpath("magick");
 }
 
-if(isset($file)){
-  if(endsWith($file, ".heic") && $magick_path != null){
-    unlink($path . "/!sorter/output.jpg");
-    $cmd = $magick_path . " '".$file."' -quality 100% '" . $path . "/!sorter/output.jpg'";
+if (isset($file)) {
+  if (endsWith($file, ".heic") && $magick_path != null) {
+    $output = $sorterDir . DIRECTORY_SEPARATOR . "output.jpg";
+
+    if (file_exists($output)) {
+      unlink($output);
+    }
+
+    $cmd = '"' . $magick_path . '" "' . $file . '" -quality 100% "' . $output . '"';
     shell_exec($cmd);
   }
 }
 
+if (isset($_GET['file']) && isset($_GET['folder'])) {
+  if (isset($file)) {
+    $preview = "?filename=" . urlencode($file) . "&time=" . time();
 
-
-if(isset($_GET['file']) && isset($_GET['folder'])){
-  //Generate the next image
-  if(isset($file)){
-    $preview = "?filename=".$file."&time=".time();
-
-    if(endsWith($file, ".heic")){
-      $preview = "?filename=" . $path . "/!sorter/output.jpg&time=" . time();
+    if (endsWith($file, ".heic")) {
+      $preview = "?filename=" . urlencode($sorterDir . DIRECTORY_SEPARATOR . "output.jpg") . "&time=" . time();
     }
-
 
     $type = "image";
-    if(endsWith($file, ".mov") || endsWith($file, ".mp4")){
+    if (endsWith($file, ".mov") || endsWith($file, ".mp4")) {
       $type = "video";
     }
-    echo json_encode(array("msg" => "Moved file " . $_GET['file'] . " to " . $_GET['folder'], "file" => basename($file), "preview" => $preview, "type" => $type, "total" => count($files)));
+
+    echo json_encode(array(
+      "msg" => "Moved file " . $_GET['file'] . " to " . $_GET['folder'],
+      "file" => basename($file),
+      "preview" => $preview,
+      "type" => $type,
+      "total" => count($files)
+    ));
     exit;
-  } else{
+  } else {
     echo json_encode(array("msg" => "No more files"));
     exit;
   }
-
 }
 
 ?>
@@ -215,58 +245,53 @@ if(isset($_GET['file']) && isset($_GET['folder'])){
         padding:8px 15px;
         border:0;
         border-radius: 100px;
-
       }
-
     </style>
   </head>
   <body>
-    <div id="result"></div>;
+    <?php echo '<!--Path : ' . htmlspecialchars($path, ENT_QUOTES) . '-->'; ?>
+    <div id="result"></div>
     <?php
-
-    if(count($files) > 0){
-      echo '<div id="name">'.basename($file) . ' ['.count($files).' left]'.'</div>';
-    } else{
+    if (!empty($files) && count($files) > 0) {
+      echo '<div id="name">' . htmlspecialchars(basename($file), ENT_QUOTES) . ' [' . count($files) . ' left]</div>';
+    } else {
       echo '<div id="name">No more files</div>';
     }
-
-
     ?>
 
     <div id="main">
-
-    <?php
-
-    if(count($files) > 0){
-
-      if(endsWith($file, ".heic")){
-        echo '<img id="main_image" src="?filename='. $path . '/!sorter/output.jpg">';
-        echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
-      } else if(endsWith($file, ".jpg") || endsWith($file, ".jpeg")){
-        echo '<img id="main_image" src="'."?filename=".urlencode($file).'">';
-        echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
-      } else if(endsWith($file, ".mp4") || endsWith($file, ".mov")){
-        echo '<img id="main_image" style="display:none;">';
-        echo '<video autoplay controls id="main_video"><source src="'."?filename=".urlencode($file).'" type="video/mp4"></video>';
+      <?php
+      if (!empty($files) && count($files) > 0) {
+        if (endsWith($file, ".heic")) {
+          echo '<img id="main_image" src="?filename=' . urlencode($sorterDir . DIRECTORY_SEPARATOR . 'output.jpg') . '&time=' . time() . '">';
+          echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
+        } else if (endsWith($file, ".jpg") || endsWith($file, ".jpeg")) {
+          echo '<img id="main_image" src="?filename=' . urlencode($file) . '">';
+          echo '<video autoplay controls id="main_video" style="display:none"><source type="video/mp4"></video>';
+        } else if (endsWith($file, ".mp4") || endsWith($file, ".mov")) {
+          echo '<img id="main_image" style="display:none;">';
+          echo '<video autoplay controls id="main_video"><source src="?filename=' . urlencode($file) . '" type="video/mp4"></video>';
+        }
+      } else {
+        echo '<p id="no_more">No more files found!</p>';
       }
-    } else{
-      echo '<p id="no_more">No more files found!</p>';
-    }
-    ?>
+      ?>
     </div>
+
     <div id="folders">
       <form id="form">
-        <input id="filename" type="hidden" value="<?php echo basename($file); ?>" name="file">
+        <input id="filename" type="hidden" value="<?php echo isset($file) ? htmlspecialchars(basename($file), ENT_QUOTES) : ''; ?>" name="file">
         <?php
-        if(count($files) > 0){
-          foreach($dirs as $dir){
-            echo '<label><input class="folder_btn" type="radio" name="folder" value="'.basename($dir).'">'.basename($dir).'</label>';
+        if (!empty($files) && count($files) > 0) {
+          foreach ($dirs as $dir) {
+            $dirName = basename($dir);
+            echo '<label><input class="folder_btn" type="radio" name="folder" value="' . htmlspecialchars($dirName, ENT_QUOTES) . '">' . htmlspecialchars($dirName, ENT_QUOTES) . '</label>';
           }
         }
         ?>
       </form>
-
     </div>
+
     <button id="new_folder_button">New folder</button>
     <form id="folder_form" method="post">
       <input name="folder_name" id="folder_name">
